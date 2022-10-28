@@ -1,0 +1,113 @@
+import os, yaml, datetime
+from telethon import TelegramClient
+from telethon.tl.types import User as tgUser
+
+
+class Bot(TelegramClient):
+    config: "BotConfig"
+    posters: list["PosterConfig"]
+    me: tgUser
+    def __init__(self, *args, **kwargs):
+        self.me = None
+        self.config = BotConfig()
+        config_path = 'config/posters_config.yaml'
+        with open(config_path, "r") as f:
+            raw_config = yaml.safe_load(f)
+
+        self.posters = []
+        for poster in raw_config:
+            self.posters.append(PosterConfig(list(poster.values())[0]))
+
+        super().__init__('config/session_name_bot',self.config.api_id,self.config.api_hash)
+    
+    def add_poster(self):
+        self.posters.append(PosterConfig())
+        self.save_poster_config()
+
+    def save_poster_config(self):
+        # Меняем значения конфиг. файла.
+        posters = [{f"poster{index}":vars(poster)} for index,poster in enumerate(self.posters)]
+        with open(r'config/posters_config.yaml', 'w', encoding="utf-8") as file: 
+            yaml.dump(posters, file, indent=4, default_flow_style=False, allow_unicode=True)
+    
+    def save_bot_config(self):
+        # Меняем значения конфиг. файла.
+        config = {"bot":vars(self.config)}
+        with open(r'config/bot_config.yaml', 'w', encoding="utf-8") as file: 
+            yaml.dump(config, file, indent=4, default_flow_style=False, allow_unicode=True)
+
+    async def check_admins(self) -> bool:
+        res = False
+        new_admin_list = []
+        for admin in self.config.admins:
+            try:
+                entity = await self.get_entity(admin)
+                link = f'https://t.me/{entity.username}'
+                new_admin_list.append(link)
+            except Exception as e:
+                res = True
+
+        self.config.admins = new_admin_list
+        return res
+
+class BotConfig:
+    def __init__(self) -> None:
+        config_path = 'config/bot_config.yaml'
+        with open(config_path, "r") as f:
+            raw_config = yaml.safe_load(f)
+        # Вставляем api_id и api_hash
+        self.api_id = raw_config["bot"]["api_id"]
+        self.api_hash = raw_config["bot"]["api_hash"]
+        self.token = raw_config["bot"]["token"]
+        self.debug = raw_config["bot"]["debug"]
+        self.report_reciever = raw_config["bot"]["report_reciever"]
+        self.admins = [admin for admin in raw_config["bot"]["admins"]]
+    
+    def __str__(self) -> str:
+        res = f'Настройки бота:"\n'
+        res += f'API_ID: "{self.api_id}"\n'
+        res += f'API_HASH: "{self.api_hash}"\n'
+        res += f'TOKEN: "{self.token}"\n'
+        res += f'Получатель отчетов: "{self.report_reciever}"\n'
+        admins = '\n'.join(self.admins)
+        res += f'Администраторы бота:\n{admins}\n'
+        debug = 'вкл.' if self.debug else 'выкл.'
+        res += f'Отладка: "{debug}"\n'    
+        return res
+
+class PosterConfig:
+    def __init__(self, poster = None) -> None:
+        if poster:
+            self.name = poster["name"]
+            self.group_list_keyword = poster["group_list_keyword"]
+            self.adv_post_keyword = poster["adv_post_keyword"]
+            self.debug = poster["debug"]
+            self.group_link = poster["group_link"]
+            self.recieve_reports = poster["recieve_reports"]
+            self.schedule = [time for time in poster["schedule"]]
+        else:
+            self.name = "Рассылка ХХХ"
+            self.group_list_keyword = "Ввести фразу поиска"
+            self.adv_post_keyword = "Ввести фразу поиска"
+            self.debug = 0
+            self.group_link = "Ссылка на группу"
+            self.recieve_reports = 0
+            self.schedule = []            
+    
+    def __str__(self) -> str:
+        res = f'Рассылка: "{self.name}"\n'
+        res += f'Поиск списка по: "{self.group_list_keyword}"\n'
+        res += f'Поиск рекламы по: "{self.adv_post_keyword}"\n'
+        res += f'Ссылка на группу с рекламой: "{self.group_link}"\n'
+        schedule = ', '.join(self.schedule)
+        res += f'Время рассылки: "{schedule}"\n'
+        debug = 'вкл.' if self.debug else 'выкл.'
+        res += f'Отладка: "{debug}"\n'
+        recieve_reports = 'Да' if self.recieve_reports else 'Нет'
+        res += f'Получать отчет в эту группу: "{recieve_reports}"\n'
+        return res
+
+bot = Bot()
+bot.parse_mode = 'HTML'
+
+
