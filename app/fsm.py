@@ -38,7 +38,7 @@ def allowed_states(states):
             state = fsm.get_state(who)
             if ((type(states) == list and state in states) or 
                 (type(states) != list and state == states)):
-                return await func(event)
+                return await func(event, who)
             else:
                 return 
         return wrapper                

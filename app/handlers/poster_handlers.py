@@ -1,5 +1,4 @@
 from telethon import TelegramClient, events
-from telethon.tl.custom import Button
 from telethon.events import StopPropagation
 
 from app.globals import PosterConfig, Bot, bot
@@ -10,15 +9,10 @@ from app.utils import check_shedule
 
 
 @errors_catching_async
-async def manage_poster_click(event: events.CallbackQuery):
-    who = event.sender_id
-    state = fsm.get_state(who)
+@allowed_states(CommonState.WAIT_ON_START)
+async def manage_poster_click(event: events.CallbackQuery, who: int):
     fsm_data = fsm.get_data(who)
-    if state != CommonState.WAIT_ON_START:
-        return
     poster_id = event.data.decode( "utf-8" ).split("-")[-1]
-
-    
     if poster_id == "add":
         bot.add_poster()
         poster_id = len(bot.posters) - 1
@@ -34,24 +28,16 @@ async def manage_poster_click(event: events.CallbackQuery):
     raise StopPropagation
 
 @errors_catching_async
-async def back_to_start(event: events.CallbackQuery):
-    who = event.sender_id
-    state = fsm.get_state(who)
-    fsm_data = fsm.get_data(who)    
-    if state != EditSenderState.WAIT_COMMAND:
-        return
+@allowed_states(EditSenderState.WAIT_COMMAND)
+async def back_to_start(event: events.CallbackQuery, who: int):
     fsm.set_state(who, CommonState.WAIT_ON_START)
     await event.edit('Вас приветствует бот управления рассылками',  buttons = get_posters_btns())
     raise StopPropagation #Останавливает дальнейшую обработку
 
 @errors_catching_async
-async def change_poster_param(event: events.CallbackQuery):
-    who = event.sender_id
-    state = fsm.get_state(who)
+@allowed_states(EditSenderState.WAIT_COMMAND)
+async def change_poster_param(event: events.CallbackQuery, who: int):
     fsm_data = fsm.get_data(who)
-    
-    if state != EditSenderState.WAIT_COMMAND:
-        return
     payload = event.data.decode( "utf-8" )
     poster_id = fsm_data['poster_id']
     param = payload.split("_")[1]
@@ -106,7 +92,6 @@ async def change_poster_param(event: events.CallbackQuery):
             fsm.set_state(who, EditSenderState.WAIT_INPUT_PHONE)
             fsm.set_data(who,fsm_data)
             raise StopPropagation #Останавливает дальнейшую обработку
-
         else:
             text = 'Идет рассыылка. Ожидайте' 
             await event.edit(text) 
@@ -118,7 +103,6 @@ async def change_poster_param(event: events.CallbackQuery):
             fsm.set_state(who, EditSenderState.WAIT_COMMAND)     
             raise StopPropagation #Останавливает дальнейшую обработку
 
-
     fsm.set_state(who, EditSenderState.WAIT_INPUT_PARAM)
     fsm_data['main_event'] = event
     fsm_data['param'] = param
@@ -126,13 +110,10 @@ async def change_poster_param(event: events.CallbackQuery):
     raise StopPropagation
 
 @errors_catching_async
-async def update_param(event: events.NewMessage):
+@allowed_states(EditSenderState.WAIT_INPUT_PARAM)
+async def update_param(event: events.NewMessage, who: int):
     await bot.delete_messages(entity=event.chat_id, message_ids=[event.message.id])
-    who = event.sender_id
-    state = fsm.get_state(who)
     fsm_data = fsm.get_data(who)    
-    if state != EditSenderState.WAIT_INPUT_PARAM:
-        return
     param = fsm_data['param'] 
     poster = bot.posters[fsm_data['poster_id']] 
     main_event = fsm_data['main_event']
@@ -143,13 +124,27 @@ async def update_param(event: events.NewMessage):
         poster.group_list_keyword = value
     elif param == 'adv':
         poster.adv_post_keyword = value       
-    elif param == 'link':
+    elif param == 'link':        
+        try:
+            entity = await bot.get_entity(value)
+        except ValueError:
+            text = "<b>Введенные данные не являются ссылкой телеграмм. Повторите ввод."
+            try: # выдает ошибку если пытаемся отправить то же текст                        
+                await main_event.edit(text, buttons = [btn_cancel])
+            except:
+                pass
+            raise StopPropagation
+            return        
         poster.group_link = value
+
     elif param == 'schedule':
         schedule = value.split(',')
         res = check_shedule(schedule)
         if res:
-            await main_event.edit(res, buttons = [btn_cancel])
+            try: # выдает ошибку если пытаемся отправить то же текст
+                await main_event.edit(res, buttons = [btn_cancel])
+            except:
+                pass
             raise StopPropagation
             return
         else:
@@ -163,13 +158,10 @@ async def update_param(event: events.NewMessage):
     raise StopPropagation
 
 @errors_catching_async
-async def send_phone(event: events.NewMessage):
+@allowed_states(EditSenderState.WAIT_INPUT_PHONE)
+async def send_phone(event: events.NewMessage, who: int):
     await bot.delete_messages(entity=event.chat_id, message_ids=[event.message.id])
-    who = event.sender_id
-    state = fsm.get_state(who)
     fsm_data = fsm.get_data(who)
-    if state != EditSenderState.WAIT_INPUT_PHONE:
-        return
     main_event = fsm_data['main_event']
     userbot = fsm_data['userbot']   
     phone = event.message.message 
@@ -189,13 +181,10 @@ async def send_phone(event: events.NewMessage):
     raise StopPropagation #Останавливает дальнейшую обработку
 
 @errors_catching_async
-async def send_code(event: events.NewMessage):
+@allowed_states(EditSenderState.WAIT_INPUT_CODE)
+async def send_code(event: events.NewMessage, who: int):
     await bot.delete_messages(entity=event.chat_id, message_ids=[event.message.id])
-    who = event.sender_id
-    state = fsm.get_state(who)
     fsm_data = fsm.get_data(who)
-    if state != EditSenderState.WAIT_INPUT_CODE:
-        return
     param = fsm_data['param'] 
     poster = bot.posters[fsm_data['poster_id']] 
     main_event = fsm_data['main_event']
@@ -218,18 +207,17 @@ async def send_code(event: events.NewMessage):
     raise StopPropagation #Останавливает дальнейшую обработку
 
 @errors_catching_async
-async def cancel_update_param(event: events.CallbackQuery):
-    who = event.sender_id
-    state = fsm.get_state(who)
+@allowed_states([EditSenderState.WAIT_INPUT_PARAM, 
+                 EditSenderState.WAIT_INPUT_PHONE, 
+                 EditSenderState.WAIT_INPUT_CODE])
+async def cancel_update_param(event: events.CallbackQuery, who: int):
     fsm_data = fsm.get_data(who)   
-    states =  [EditSenderState.WAIT_INPUT_PARAM, EditSenderState.WAIT_INPUT_PHONE, EditSenderState.WAIT_INPUT_CODE]
-    if state in states:
-        poster = bot.posters[fsm_data['poster_id']]
-        text = str(poster)
-        text += "\nНажмите кнопку для изменения параметра"
-        await event.edit(text, buttons = get_poster_btns(poster))
-        fsm.set_state(who, EditSenderState.WAIT_COMMAND)    
-        raise StopPropagation
+    poster = bot.posters[fsm_data['poster_id']]
+    text = str(poster)
+    text += "\nНажмите кнопку для изменения параметра"
+    await event.edit(text, buttons = get_poster_btns(poster))
+    fsm.set_state(who, EditSenderState.WAIT_COMMAND)    
+    raise StopPropagation
 
 @errors_catching
 def register_handlers():
@@ -244,4 +232,4 @@ def register_handlers():
 
 async def post_advertisement(userbot: TelegramClient, poster: PosterConfig):
 
-    pass
+    return ""

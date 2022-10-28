@@ -6,16 +6,10 @@ from app.globals import Bot, bot
 from app.logger import errors_catching, errors_catching_async
 from app.keyboard import *
 from app.fsm import *
-from app.utils import check_shedule
-
 
 @errors_catching_async
-async def manage_bot_click(event: events.CallbackQuery):
-    who = event.sender_id
-    state = fsm.get_state(who)
-    fsm_data = fsm.get_data(who)
-    if state != CommonState.WAIT_ON_START:
-        return
+@allowed_states(CommonState.WAIT_ON_START)
+async def manage_bot_click(event: events.CallbackQuery, who: int):
     sender_link = f'https://t.me/{event._sender.username}'
     text = str(bot.config)
     text += "\nНажмите кнопку для изменения параметра"
@@ -24,12 +18,9 @@ async def manage_bot_click(event: events.CallbackQuery):
     raise StopPropagation
 
 @errors_catching_async
-async def back_to_start(event: events.CallbackQuery):
-    who = event.sender_id
-    state = fsm.get_state(who)
+@allowed_states(EditBotState.WAIT_COMMAND)
+async def back_to_start(event: events.CallbackQuery, who: int):
     fsm_data = fsm.get_data(who)    
-    if state != EditBotState.WAIT_COMMAND:
-        return
     fsm.set_state(who, CommonState.WAIT_ON_START)
     fsm_data['main_event'] = event
     fsm.set_data(who,fsm_data)
@@ -37,11 +28,8 @@ async def back_to_start(event: events.CallbackQuery):
     raise StopPropagation #Останавливает дальнейшую обработку
 
 @errors_catching_async
-async def del_admin(event: events.CallbackQuery):
-    who = event.sender_id
-    state = fsm.get_state(who)    
-    if state != EditBotState.WAIT_COMMAND:
-        return
+@allowed_states(EditBotState.WAIT_COMMAND)
+async def del_admin(event: events.CallbackQuery, who: int):
     admin_id = int(event.data.decode( "utf-8" ).split("-")[-1])
     bot.config.admins.pop(admin_id)
     bot.save_bot_config()
@@ -52,13 +40,9 @@ async def del_admin(event: events.CallbackQuery):
     raise StopPropagation
 
 @errors_catching_async
-async def add_admin_click(event: events.CallbackQuery):
-    who = event.sender_id
-    state = fsm.get_state(who)
+@allowed_states(EditBotState.WAIT_COMMAND)
+async def add_admin_click(event: events.CallbackQuery, who: int):
     fsm_data = fsm.get_data(who)     
-    if state != EditBotState.WAIT_COMMAND:
-        return      
-
     text = "Введите ссылку на пользователя телеграмм в формате https://t.me/username"
     await event.edit(text, buttons = [btn_cancel], link_preview = False)
     fsm_data['main_event'] = event
@@ -67,20 +51,20 @@ async def add_admin_click(event: events.CallbackQuery):
     raise StopPropagation
 
 @errors_catching_async
-async def save_admin(event: events.NewMessage):
+@allowed_states(EditBotState.WAIT_INPUT_PARAM)
+async def save_admin(event: events.NewMessage, who: int):
     await bot.delete_messages(entity=event.chat_id, message_ids=[event.message.id])
-    who = event.sender_id
-    state = fsm.get_state(who)
     fsm_data = fsm.get_data(who)    
-    if state != EditBotState.WAIT_INPUT_PARAM:
-        return
     main_event = fsm_data['main_event']
     value = event.message.message
     try:
         entity = await bot.get_entity(value)
     except:
         text = "<b>Введенные данные не являются ссылкой телеграмм.</b> Повторите ввод"
-        await main_event.edit(text, buttons = [btn_cancel])
+        try: # выдает ошибку если пытаемся отправить то же текст
+            await main_event.edit(text, buttons = [btn_cancel])
+        except:
+            pass
         raise StopPropagation
         return
     link = f'https://t.me/{entity.username}'          
@@ -95,11 +79,8 @@ async def save_admin(event: events.NewMessage):
     raise StopPropagation
 
 @errors_catching_async
-async def cancel_add_admin(event: events.CallbackQuery):
-    who = event.sender_id
-    state = fsm.get_state(who) 
-    if state != EditBotState.WAIT_INPUT_PARAM:
-        return
+@allowed_states(EditBotState.WAIT_INPUT_PARAM)
+async def cancel_add_admin(event: events.CallbackQuery, who: int):
     text = str(bot.config)
     sender_link = f'https://t.me/{event._sender.username}'
     text += "\nНажмите кнопку для изменения параметра"
@@ -108,13 +89,9 @@ async def cancel_add_admin(event: events.CallbackQuery):
     raise StopPropagation
 
 @errors_catching_async
-async def change_reciever_click(event: events.CallbackQuery):
-    who = event.sender_id
-    state = fsm.get_state(who)
-    fsm_data = fsm.get_data(who)     
-    if state != EditBotState.WAIT_COMMAND:
-        return      
-
+@allowed_states(EditBotState.WAIT_COMMAND)
+async def change_reciever_click(event: events.CallbackQuery, who: int):
+    fsm_data = fsm.get_data(who)          
     text = "Введите ссылку на пользователя, канал или группу телеграмм в формате https://t.me/namedlink"
     await event.edit(text, buttons = [btn_cancel], link_preview = False)
     fsm_data['main_event'] = event
@@ -123,22 +100,24 @@ async def change_reciever_click(event: events.CallbackQuery):
     raise StopPropagation
 
 @errors_catching_async
-async def save_reciever(event: events.NewMessage):
+@allowed_states(EditBotState.WAIT_INPUT_RECIEVER)
+async def save_reciever(event: events.NewMessage, who: int):
     await bot.delete_messages(entity=event.chat_id, message_ids=[event.message.id])
-    who = event.sender_id
-    state = fsm.get_state(who)
     fsm_data = fsm.get_data(who)    
-    if state != EditBotState.WAIT_INPUT_RECIEVER:
-        return
     main_event = fsm_data['main_event']
     value = event.message.message
     try:
         entity = await bot.get_entity(value)
-    except:
-        text = "<b>Введенные данные не являются ссылкой телеграмм.</b> Повторите ввод"
-        await main_event.edit(text, buttons = [btn_cancel])
+    except ValueError:
+        text = "<b>Введенные данные не являются ссылкой телеграмм. Повторите ввод."
+        try: # выдает ошибку если пытаемся отправить то же текст                        
+            await main_event.edit(text, buttons = [btn_cancel])
+        except:
+            pass
         raise StopPropagation
         return        
+    except Exception as e:
+        pass  
     bot.config.report_reciever = value
     bot.save_bot_config()
     sender_link = f'https://t.me/{event._sender.username}'
@@ -149,11 +128,8 @@ async def save_reciever(event: events.NewMessage):
     raise StopPropagation
 
 @errors_catching_async
-async def cancel_change_reciever(event: events.CallbackQuery):
-    who = event.sender_id
-    state = fsm.get_state(who)  
-    if state != EditBotState.WAIT_INPUT_RECIEVER:
-        return
+@allowed_states(EditBotState.WAIT_INPUT_RECIEVER)
+async def cancel_change_reciever(event: events.CallbackQuery, who: int):
     text = str(bot.config)
     sender_link = f'https://t.me/{event._sender.username}'
     text += "\nНажмите кнопку для изменения параметра"
@@ -171,4 +147,4 @@ def register_handlers():
     bot.add_event_handler(cancel_add_admin, events.CallbackQuery(pattern='^cancel$'))
     bot.add_event_handler(cancel_change_reciever, events.CallbackQuery(pattern='^cancel$'))
     bot.add_event_handler(save_admin, events.NewMessage(chats=bot.config.admins, incoming=True)) 
-    bot.add_event_handler(save_admin, events.NewMessage(chats=bot.config.admins, incoming=True)) 
+    bot.add_event_handler(save_reciever, events.NewMessage(chats=bot.config.admins, incoming=True)) 
