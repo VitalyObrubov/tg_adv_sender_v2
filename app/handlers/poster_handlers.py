@@ -6,6 +6,7 @@ from app.logger import errors_catching, errors_catching_async
 from app.keyboard import *
 from app.fsm import *
 from app.utils import check_shedule
+from app.adv_poster import adv_send
 
 
 @errors_catching_async
@@ -231,5 +232,5 @@ def register_handlers():
 
 
 async def post_advertisement(userbot: TelegramClient, poster: PosterConfig):
-
+    res = adv_send(userbot, poster)
     return ""
