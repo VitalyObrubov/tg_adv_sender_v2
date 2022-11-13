@@ -9,11 +9,12 @@ class EditSenderState(Enum):
     WAIT_INPUT_PARAM = auto()
     WAIT_INPUT_PHONE = auto()
     WAIT_INPUT_CODE = auto()
+    WAIT_INPUT_RECIEVER = auto()    
 
 class EditBotState(Enum):
     WAIT_COMMAND = auto()
     WAIT_INPUT_PARAM = auto()
-    WAIT_INPUT_RECIEVER = auto()
+
 
 class FSM:
     def __init__(self):

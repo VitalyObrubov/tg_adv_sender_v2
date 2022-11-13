@@ -1,5 +1,6 @@
 from telethon import TelegramClient, events
-from telethon.events import StopPropagation
+from telethon.events import StopPropagation 
+from telethon.errors.rpcerrorlist import BotMethodInvalidError
 
 from app.globals import PosterConfig, Bot, bot
 from app.logger import errors_catching, errors_catching_async
@@ -32,7 +33,7 @@ async def manage_poster_click(event: events.CallbackQuery, who: int):
 @allowed_states(EditSenderState.WAIT_COMMAND)
 async def back_to_start(event: events.CallbackQuery, who: int):
     fsm.set_state(who, CommonState.WAIT_ON_START)
-    await event.edit('Вас приветствует бот управления рассылками',  buttons = get_posters_btns())
+    await event.edit('Вас приветствует бот управления рассылками', buttons = get_posters_btns())
     raise StopPropagation #Останавливает дальнейшую обработку
 
 @errors_catching_async
@@ -53,7 +54,10 @@ async def change_poster_param(event: events.CallbackQuery, who: int):
         text = "Введите фразу поиска поста с рекламой"
         await event.edit(text, buttons = [btn_cancel])       
     elif param == 'link':
-        text = "Введите ссылку на группу с данными"
+        text = "Введите ссылку канал или группу телеграмм в формате https://t.me/namedlink"
+        await event.edit(text, buttons = [btn_cancel])
+    elif param == 'recieverchange':
+        text = "Введите ссылку на пользователя, канал или группу телеграмм в формате https://t.me/namedlink"
         await event.edit(text, buttons = [btn_cancel])
     elif param == 'schedule':
         text = "Введите расписание рассылки в формате: 10:20,12:30,16:40"
@@ -118,6 +122,7 @@ async def update_param(event: events.NewMessage, who: int):
     param = fsm_data['param'] 
     poster = bot.posters[fsm_data['poster_id']] 
     main_event = fsm_data['main_event']
+    #main_event = 7
     value = event.message.message  
     if param == 'name':
         poster.name = value       
@@ -126,18 +131,9 @@ async def update_param(event: events.NewMessage, who: int):
     elif param == 'adv':
         poster.adv_post_keyword = value       
     elif param == 'link':        
-        try:
-            entity = await bot.get_entity(value)
-        except ValueError:
-            text = "<b>Введенные данные не являются ссылкой телеграмм. Повторите ввод."
-            try: # выдает ошибку если пытаемся отправить то же текст                        
-                await main_event.edit(text, buttons = [btn_cancel])
-            except:
-                pass
-            raise StopPropagation
-            return        
         poster.group_link = value
-
+    elif param == 'recieverchange':              
+        poster.report_reciever = value
     elif param == 'schedule':
         schedule = value.split(',')
         res = check_shedule(schedule)
@@ -207,6 +203,7 @@ async def send_code(event: events.NewMessage, who: int):
     fsm.set_state(who, EditSenderState.WAIT_COMMAND)     
     raise StopPropagation #Останавливает дальнейшую обработку
 
+
 @errors_catching_async
 @allowed_states([EditSenderState.WAIT_INPUT_PARAM, 
                  EditSenderState.WAIT_INPUT_PHONE, 
@@ -220,6 +217,7 @@ async def cancel_update_param(event: events.CallbackQuery, who: int):
     fsm.set_state(who, EditSenderState.WAIT_COMMAND)    
     raise StopPropagation
 
+
 @errors_catching
 def register_handlers():
     bot.add_event_handler(manage_poster_click, events.CallbackQuery(pattern='^poster-'))
@@ -228,9 +226,10 @@ def register_handlers():
     bot.add_event_handler(cancel_update_param, events.CallbackQuery(pattern='^cancel$'))
     bot.add_event_handler(update_param, events.NewMessage(chats=bot.config.admins, incoming=True))
     bot.add_event_handler(send_phone, events.NewMessage(chats=bot.config.admins, incoming=True))  
-    bot.add_event_handler(send_code, events.NewMessage(chats=bot.config.admins, incoming=True))  
+    bot.add_event_handler(send_code, events.NewMessage(chats=bot.config.admins, incoming=True)) 
+
 
 
 async def post_advertisement(userbot: TelegramClient, poster: PosterConfig):
-    res = adv_send(userbot, poster)
+    res = await adv_send(userbot, poster)
     return ""

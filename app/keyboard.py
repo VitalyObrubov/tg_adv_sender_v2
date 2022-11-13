@@ -11,32 +11,27 @@ def get_posters_btns():
     return btns
 
 def get_poster_btns(poster: PosterConfig):
-    reports = "не получать" if poster.recieve_reports else "получать"
-    debug = '"выкл."' if poster.debug else '"вкл."'
+    debug = 'Выкл.' if poster.debug else 'Вкл.'
     btns = []
     btns.append([Button.inline('🖅Название рассылки', 'poster_name'),
                  Button.inline('❌Удалить рассылку', 'poster_del')])
     btns.append([Button.inline('🔍Фраза поиска списка', 'poster_list'),
                  Button.inline('🔎Фраза поиска рекламы', 'poster_adv')])
-    btns.append([Button.inline('🔗Ссылка на группу', 'poster_link'),
+    btns.append([Button.inline('🔗Группа с рекламой', 'poster_link'),
                  Button.inline('⏰Расписание рассылки', 'poster_schedule')])
-    btns.append([Button.inline(f'🛠Отладка {debug}', 'poster_debug'),
-                 Button.inline(f'📝Отчеты {reports}', 'poster_report')])
+    btns.append([Button.inline(f'🛠{debug} отладку', 'poster_debug'),
+                 Button.inline('✏Группа для отчетов', 'poster_recieverchange')])
     btns.append([Button.inline('▶Запустить рассылку', 'poster_start')])             
     btns.append([btn_back])
     return btns
 
 def get_bot_adm_btns(curr_user_link: str):
     btns = []
-
     for id, admin in enumerate(bot.config.admins):
-
         if curr_user_link == admin:
             continue
         btns.append([Button.inline('❌' + admin, f'admin_del-{id}')])
-
     btns.append([Button.inline('🆕Добавить администратора', 'admin_add')])
-    btns.append([Button.inline('✏Изменить получателя отчетов', 'reciever_change')])
     btns.append([btn_back])
     return btns
 

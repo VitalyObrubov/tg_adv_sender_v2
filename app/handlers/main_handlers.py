@@ -24,13 +24,14 @@ async def unknown_callback(event: events.CallbackQuery):
 
 async def unknown_message(event: events.NewMessage):
     await event.respond('Неизвестная команда')
-    raise StopPropagation
+
 
 @errors_catching
 def register_handlers():
+    bot.add_event_handler(start, events.NewMessage(chats=bot.config.admins, incoming=True, pattern='/start'))
     register_handlers_posters()
     register_handlers_admins() 
-    bot.add_event_handler(start, events.NewMessage(chats=bot.config.admins, incoming=True, pattern='/start'))
+
     # Обрабатывает нераспознаные события, должен быть последним в списке
     bot.add_event_handler(unknown_message, events.NewMessage(chats=bot.config.admins, incoming=True)) 
     bot.add_event_handler(unknown_callback, events.CallbackQuery)

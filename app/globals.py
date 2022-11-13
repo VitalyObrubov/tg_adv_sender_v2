@@ -59,40 +59,38 @@ class BotConfig:
         self.api_id = raw_config["bot"]["api_id"]
         self.api_hash = raw_config["bot"]["api_hash"]
         self.token = raw_config["bot"]["token"]
-        self.debug = raw_config["bot"]["debug"]
-        self.report_reciever = raw_config["bot"]["report_reciever"]
         self.admins = [admin for admin in raw_config["bot"]["admins"]]
     
     def __str__(self) -> str:
         res = f'Настройки бота:"\n'
-        res += f'API_ID: "{self.api_id}"\n'
-        res += f'API_HASH: "{self.api_hash}"\n'
-        res += f'TOKEN: "{self.token}"\n'
-        res += f'Получатель отчетов: "{self.report_reciever}"\n'
+        # res += f'API_ID: "{self.api_id}"\n'
+        # res += f'API_HASH: "{self.api_hash}"\n'
+        # res += f'TOKEN: "{self.token}"\n'
+        # res += f'Получатель отчетов: "{self.report_reciever}"\n'
         admins = '\n'.join(self.admins)
         res += f'Администраторы бота:\n{admins}\n'
-        debug = 'вкл.' if self.debug else 'выкл.'
-        res += f'Отладка: "{debug}"\n'    
+        # debug = 'вкл.' if self.debug else 'выкл.'
+        # res += f'Отладка: "{debug}"\n'    
         return res
 
 class PosterConfig:
     def __init__(self, poster = None) -> None:
         if poster:
-            self.name = poster["name"]
-            self.group_list_keyword = poster["group_list_keyword"]
-            self.adv_post_keyword = poster["adv_post_keyword"]
-            self.debug = poster["debug"]
-            self.group_link = poster["group_link"]
-            self.recieve_reports = poster["recieve_reports"]
+            self.name = poster.get("name")
+            self.group_list_keyword = poster.get("group_list_keyword")
+            self.adv_post_keyword = poster.get("adv_post_keyword")
+            self.debug = poster.get("debug")
+            self.group_link = poster.get("group_link")
             self.schedule = [time for time in poster["schedule"]]
+            self.report_reciever = poster.get("report_reciever")
         else:
             self.name = "Рассылка ХХХ"
             self.group_list_keyword = "Ввести фразу поиска"
             self.adv_post_keyword = "Ввести фразу поиска"
             self.debug = 0
             self.group_link = "Ссылка на группу"
-            self.recieve_reports = 0
-            self.schedule = []            
+            self.schedule = [] 
+            self.report_reciever = "Ссылка на группу"           
     
     def __str__(self) -> str:
         res = f'Рассылка: "{self.name}"\n'
@@ -101,10 +99,9 @@ class PosterConfig:
         res += f'Ссылка на группу с рекламой: "{self.group_link}"\n'
         schedule = ', '.join(self.schedule)
         res += f'Время рассылки: "{schedule}"\n'
+        res += f'Получатель отчетов: "{self.report_reciever}"\n'
         debug = 'вкл.' if self.debug else 'выкл.'
         res += f'Отладка: "{debug}"\n'
-        recieve_reports = 'Да' if self.recieve_reports else 'Нет'
-        res += f'Получать отчет в эту группу: "{recieve_reports}"\n'
         return res
 
 bot = Bot()

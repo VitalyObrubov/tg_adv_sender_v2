@@ -14,7 +14,7 @@ def errors_catching_async(func):
             logging.error("Exception", exc_info=e) 
             print("Error has occurred. See log file")
             for admin in bot.config.admins:
-                await bot.send_message(admin, "Error has occurred. See log file")
+                await bot.send_message(admin, f"Error has occurred. See log file {e}")
             return e
     return wrapper
 
@@ -27,6 +27,6 @@ def errors_catching(func):
             logging.error("Exception", exc_info=e) 
             print("Error has occurred. See log file")
             for admin in bot.config.admins:
-                bot.send_message(admin, "Error has occurred. See log file")
+                bot.send_message(admin, f"Error has occurred. See log file {e}")
             return e
     return wrapper
