@@ -1,14 +1,20 @@
 import os, yaml, datetime
 from telethon import TelegramClient
 from telethon.tl.types import User as tgUser
+from app.scheduler import BotScheduler
 
 
 class Bot(TelegramClient):
     config: "BotConfig"
     posters: list["PosterConfig"]
+    userbot: TelegramClient
+    userbot_fio: str
     me: tgUser
-    def __init__(self, *args, **kwargs):
+    scheduler: BotScheduler
+    def __init__(self, *args, **kwargs):        
         self.me = None
+        self.userbot = None
+        self.userbot_fio = None
         self.config = BotConfig()
         config_path = 'config/posters_config.yaml'
         with open(config_path, "r") as f:
@@ -66,11 +72,8 @@ class BotConfig:
         # res += f'API_ID: "{self.api_id}"\n'
         # res += f'API_HASH: "{self.api_hash}"\n'
         # res += f'TOKEN: "{self.token}"\n'
-        # res += f'Получатель отчетов: "{self.report_reciever}"\n'
         admins = '\n'.join(self.admins)
-        res += f'Администраторы бота:\n{admins}\n'
-        # debug = 'вкл.' if self.debug else 'выкл.'
-        # res += f'Отладка: "{debug}"\n'    
+        res += f'Администраторы бота:\n{admins}\n'    
         return res
 
 class PosterConfig:
@@ -82,6 +85,7 @@ class PosterConfig:
             self.debug = poster.get("debug")
             self.group_link = poster.get("group_link")
             self.schedule = [time for time in poster["schedule"]]
+            self.jobs = []
             self.report_reciever = poster.get("report_reciever")
         else:
             self.name = "Рассылка ХХХ"
@@ -90,6 +94,7 @@ class PosterConfig:
             self.debug = 0
             self.group_link = "Ссылка на группу"
             self.schedule = [] 
+            self.jobs = []
             self.report_reciever = "Ссылка на группу"           
     
     def __str__(self) -> str:
@@ -106,5 +111,6 @@ class PosterConfig:
 
 bot = Bot()
 bot.parse_mode = 'HTML'
+
 
 

@@ -3,13 +3,14 @@ import functools
 
 class CommonState(Enum):
     WAIT_ON_START = auto()
+    WAIT_INPUT_PHONE = auto()
+    WAIT_INPUT_CODE = auto()
 
 class EditSenderState(Enum):
     WAIT_COMMAND = auto()
     WAIT_INPUT_PARAM = auto()
-    WAIT_INPUT_PHONE = auto()
-    WAIT_INPUT_CODE = auto()
-    WAIT_INPUT_RECIEVER = auto()    
+    WAIT_INPUT_RECIEVER = auto() 
+    WAIT_SEND_FINISH = auto()    
 
 class EditBotState(Enum):
     WAIT_COMMAND = auto()
@@ -38,6 +39,7 @@ def allowed_states(states):
             who = event.sender_id
             state = fsm.get_state(who)
             if ((type(states) == list and state in states) or 
+                (state == None) or
                 (type(states) != list and state == states)):
                 return await func(event, who)
             else:

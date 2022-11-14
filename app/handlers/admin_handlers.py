@@ -11,7 +11,8 @@ from app.fsm import *
 @allowed_states(CommonState.WAIT_ON_START)
 async def manage_bot_click(event: events.CallbackQuery, who: int):
     sender_link = f'https://t.me/{event._sender.username}'
-    text = str(bot.config)
+    text = f"Отправка осуществляется от имени '{bot.userbot_fio}'\n"
+    text += str(bot.config)
     text += f"\nBot username: @{bot.me.username}"
     text += f"\nBot name: {bot.me.first_name}" 
     text += "\nНажмите кнопку для изменения параметра"
@@ -68,13 +69,13 @@ async def save_admin(event: events.NewMessage, who: int):
         except:
             pass
         raise StopPropagation
-        return
     link = f'https://t.me/{entity.username}'          
     if not link in bot.config.admins:
         bot.config.admins.append(link)
         bot.save_bot_config()
     sender_link = f'https://t.me/{event._sender.username}'
-    text = str(bot.config)
+    text = f"Отправка осуществляется от имени '{bot.userbot_fio}'\n"
+    text += str(bot.config)
     text += "\nНажмите кнопку для изменения параметра"
     await main_event.edit(text, buttons = get_bot_adm_btns(sender_link), link_preview = False)
     fsm.set_state(who, EditBotState.WAIT_COMMAND)    
@@ -83,7 +84,8 @@ async def save_admin(event: events.NewMessage, who: int):
 @errors_catching_async
 @allowed_states(EditBotState.WAIT_INPUT_PARAM)
 async def cancel_add_admin(event: events.CallbackQuery, who: int):
-    text = str(bot.config)
+    text = f"Отправка осуществляется от имени '{bot.userbot_fio}'\n"
+    text += str(bot.config)
     sender_link = f'https://t.me/{event._sender.username}'
     text += "\nНажмите кнопку для изменения параметра"
     await event.edit(text, buttons = get_bot_adm_btns(sender_link), link_preview = False)

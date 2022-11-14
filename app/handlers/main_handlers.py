@@ -8,6 +8,7 @@ from app.logger import errors_catching, errors_catching_async
 from app.keyboard import get_posters_btns
 from app.handlers.poster_handlers import register_handlers as register_handlers_posters
 from app.handlers.admin_handlers import register_handlers as register_handlers_admins
+from app.handlers.activate_userbot import register_handlers as register_handlers_act_usr
 
 @errors_catching_async
 async def start(event: events.NewMessage):
@@ -21,9 +22,10 @@ async def start(event: events.NewMessage):
 
 async def unknown_callback(event: events.CallbackQuery):
     await event.respond('Unknown clicking {}!'.format(event.data))
+    pass
 
 async def unknown_message(event: events.NewMessage):
-    await event.respond('Неизвестная команда')
+    await event.respond('Неизвестная команда. Используйте кнопки')
 
 
 @errors_catching
@@ -31,6 +33,7 @@ def register_handlers():
     bot.add_event_handler(start, events.NewMessage(chats=bot.config.admins, incoming=True, pattern='/start'))
     register_handlers_posters()
     register_handlers_admins() 
+    register_handlers_act_usr()
 
     # Обрабатывает нераспознаные события, должен быть последним в списке
     bot.add_event_handler(unknown_message, events.NewMessage(chats=bot.config.admins, incoming=True)) 

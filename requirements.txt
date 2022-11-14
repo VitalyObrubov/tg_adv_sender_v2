@@ -1,2 +1,4 @@
 telethon==1.25.4
 pyyaml
+scheduler==0.8.0
+pytz
