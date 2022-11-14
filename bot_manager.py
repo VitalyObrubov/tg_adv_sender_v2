@@ -35,6 +35,9 @@ async def start():
     print('(Press Ctrl+C to stop this)')    
     await bot.run_until_disconnected()
 
+
+
+
 if __name__ == '__main__':
   
     logging.info("Start bot pooling")
