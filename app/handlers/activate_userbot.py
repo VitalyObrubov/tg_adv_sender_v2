@@ -29,15 +29,11 @@ async def activate_userbot(bot: Bot, event = None, who = 1):
             pass
 
 
-
-
 @errors_catching_async
 @allowed_states(CommonState.WAIT_INPUT_PHONE)
-async def send_phone_(event: events.NewMessage, who: int):
+async def send_phone(event: events.NewMessage, who: int):
     await bot.delete_messages(entity=event.chat_id, message_ids=[event.message.id])
     fsm_data = fsm.get_data(who)
-    # main_event = fsm_data['main_event']
-    # userbot = fsm_data['userbot']   
     phone = event.message.message 
 
     try: 
@@ -59,7 +55,7 @@ async def send_phone_(event: events.NewMessage, who: int):
 
 @errors_catching_async
 @allowed_states(CommonState.WAIT_INPUT_CODE)
-async def send_code_(event: events.NewMessage, who: int):
+async def send_code(event: events.NewMessage, who: int):
 
     await bot.delete_messages(entity=event.chat_id, message_ids=[event.message.id])
     fsm_data = fsm.get_data(who)
@@ -83,5 +79,5 @@ async def send_code_(event: events.NewMessage, who: int):
 
 @errors_catching
 def register_handlers():
-    bot.add_event_handler(send_phone_, events.NewMessage(chats=bot.config.admins, incoming=True))  
-    bot.add_event_handler(send_code_, events.NewMessage(chats=bot.config.admins, incoming=True)) 
+    bot.add_event_handler(send_phone, events.NewMessage(chats=bot.config.admins, incoming=True))  
+    bot.add_event_handler(send_code, events.NewMessage(chats=bot.config.admins, incoming=True)) 

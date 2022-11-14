@@ -8,7 +8,6 @@ from app.keyboard import *
 from app.fsm import *
 from app.utils import check_shedule
 from app.adv_poster import adv_send
-from app.handlers.activate_userbot import activate_userbot
 
 
 @errors_catching_async
@@ -82,11 +81,13 @@ async def change_poster_param(event: events.CallbackQuery, who: int):
         raise StopPropagation #Останавливает дальнейшую обработку
     elif param == 'start':
         if not await bot.userbot.is_user_authorized():
-            activate_userbot(event, who)
+            text = "Userbot для рассылки не активирован. Активируйте его из административного меню"
+            await event.edit(text, buttons = get_poster_btns(poster))
+            raise StopPropagation #Останавливает дальнейшую обработку    
         text = 'Идет рассыылка. Ожидайте'    
         fsm.set_state(who, EditSenderState.WAIT_SEND_FINISH)
         await event.edit(text, buttons = get_poster_btns(poster)) 
-        err_text = await post_advertisement(bot.userbot, poster)
+        err_text = await adv_send(bot, poster)
         text = str(poster)
         text += "\nНажмите кнопку для изменения параметра\n"
         text += err_text
@@ -129,7 +130,7 @@ async def update_param(event: events.NewMessage, who: int):
             raise StopPropagation
             return
         else:
-            poster.schedule = schedule
+            bot.scheduler.update_poster_jobs(poster, schedule)
     bot.save_poster_config()
     text = str(poster)
     text += "\nНажмите кнопку для изменения параметра"
@@ -165,6 +166,3 @@ def register_handlers():
     bot.add_event_handler(unknown_callback, events.CallbackQuery)
 
 
-async def post_advertisement(userbot: TelegramClient, poster: PosterConfig):
-    res = await adv_send(userbot, poster)
-    return ""

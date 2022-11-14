@@ -83,18 +83,18 @@ class PosterConfig:
             self.group_list_keyword = poster.get("group_list_keyword")
             self.adv_post_keyword = poster.get("adv_post_keyword")
             self.debug = poster.get("debug")
+            self.sending_on = poster.get("sending_on")
             self.group_link = poster.get("group_link")
-            self.schedule = [time for time in poster["schedule"]]
-            self.jobs = []
+            self.schedule = {time:None for time in poster["schedule"]}
             self.report_reciever = poster.get("report_reciever")
         else:
             self.name = "Рассылка ХХХ"
             self.group_list_keyword = "Ввести фразу поиска"
             self.adv_post_keyword = "Ввести фразу поиска"
             self.debug = 0
+            self.sending_on = 0
             self.group_link = "Ссылка на группу"
-            self.schedule = [] 
-            self.jobs = []
+            self.schedule = {} 
             self.report_reciever = "Ссылка на группу"           
     
     def __str__(self) -> str:
