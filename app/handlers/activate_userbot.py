@@ -13,17 +13,16 @@ import pytz
 async def activate_userbot(bot: Bot, event = None, who = 1):
     fsm_data = fsm.get_data(who)
     bot.userbot = TelegramClient('config/session_name_adv', bot.config.api_id, bot.config.api_hash)
-
     await bot.userbot.connect()
     if not await bot.userbot.is_user_authorized():
         text = 'Для авторизации введите свой телефонный номер пользователя в телеграм в формате +7ХХХХХХХХХХ' 
         admin = bot.config.admins[0]
         tmp = await bot.send_message(admin, text)       
-        fsm.set_state(tmp.chat_id, CommonState.WAIT_INPUT_PHONE)
         fsm.set_data(tmp.chat_id, fsm_data)
+        fsm.set_state(tmp.chat_id,CommonState.WAIT_INPUT_PHONE)
     else:
-        full = await bot.userbot(GetFullUserRequest("me"))
         try: # на всякий случай
+            full = await bot.userbot(GetFullUserRequest("me"))
             bot.userbot_fio = f"{full.users[0].first_name} {full.users[0].last_name} {full.users[0].username}"
         except:
             pass
@@ -73,7 +72,9 @@ async def send_code(event: events.NewMessage, who: int):
         text = f'\n{e}\n<b>Что-то пошло не так. Попробуйте сначала</b>' 
 
     admin = bot.config.admins[0]
-    await bot.send_message(admin, text)  
+    await bot.send_message(admin, text) 
+    state = fsm_data['start_state'] 
+    fsm.set_state(who,state)
     raise StopPropagation #Останавливает дальнейшую обработку
 
 

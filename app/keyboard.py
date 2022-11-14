@@ -32,6 +32,7 @@ def get_bot_adm_btns(curr_user_link: str):
             continue
         btns.append([Button.inline('❌' + admin, f'admin_del-{id}')])
     btns.append([Button.inline('🆕Добавить администратора', 'admin_add')])
+    btns.append([Button.inline('💓Активировать бота', 'activate_bot')])
     btns.append([btn_back])
     return btns
 

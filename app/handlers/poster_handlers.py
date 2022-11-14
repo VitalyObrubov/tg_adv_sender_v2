@@ -90,7 +90,7 @@ async def change_poster_param(event: events.CallbackQuery, who: int):
         err_text = await adv_send(bot, poster)
         text = str(poster)
         text += "\nНажмите кнопку для изменения параметра\n"
-        text += err_text
+        text += ",".join(err_text)
         await event.edit(text, buttons = get_poster_btns(poster))
         fsm.set_state(who, EditSenderState.WAIT_COMMAND)     
         raise StopPropagation #Останавливает дальнейшую обработку

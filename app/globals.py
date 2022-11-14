@@ -2,8 +2,6 @@ import os, yaml, datetime
 from telethon import TelegramClient
 from telethon.tl.types import User as tgUser
 from app.scheduler import BotScheduler
-
-
 class Bot(TelegramClient):
     config: "BotConfig"
     posters: list["PosterConfig"]
@@ -25,6 +23,16 @@ class Bot(TelegramClient):
             self.posters.append(PosterConfig(list(poster.values())[0]))
 
         super().__init__('config/session_name_bot',self.config.api_id,self.config.api_hash)
+    
+    async def __str__(self) -> str:
+        res = f'Настройки бота:"\n'
+        res += f"Отправка осуществляется от имени '{self.userbot_fio}'\n" 
+        if await self.userbot.is_user_authorized():   
+            res += "Бот авторизацию прошел\n"
+        else:
+            res += "Бот авторизацию не прошел\n"
+        res += str(self.config)
+        return res
     
     def add_poster(self):
         self.posters.append(PosterConfig())

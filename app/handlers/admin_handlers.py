@@ -4,6 +4,7 @@ from telethon.events import StopPropagation
 
 from app.globals import Bot, bot
 from app.logger import errors_catching, errors_catching_async
+from app.handlers.activate_userbot import activate_userbot
 from app.keyboard import *
 from app.fsm import *
 
@@ -54,6 +55,16 @@ async def add_admin_click(event: events.CallbackQuery, who: int):
     raise StopPropagation
 
 @errors_catching_async
+@allowed_states(EditBotState.WAIT_COMMAND)
+async def activate_bot_click(event: events.CallbackQuery, who: int):
+    fsm_data = fsm.get_data(who)     
+    fsm.set_state(who, EditBotState.WAIT_INPUT_PARAM) 
+    fsm_data["start_state"] = EditBotState.WAIT_COMMAND
+    fsm.set_data(who,fsm_data)
+    await activate_userbot(bot, event, who)
+    raise StopPropagation    
+
+@errors_catching_async
 @allowed_states(EditBotState.WAIT_INPUT_PARAM)
 async def save_admin(event: events.NewMessage, who: int):
     await bot.delete_messages(entity=event.chat_id, message_ids=[event.message.id])
@@ -98,6 +109,7 @@ def register_handlers():
     bot.add_event_handler(manage_bot_click, events.CallbackQuery(pattern='^manage_bot$'))
     bot.add_event_handler(del_admin, events.CallbackQuery(pattern='^admin_del-'))
     bot.add_event_handler(add_admin_click, events.CallbackQuery(pattern='^admin_add$'))
+    bot.add_event_handler(activate_bot_click, events.CallbackQuery(pattern='^activate_bot$'))
     bot.add_event_handler(back_to_start, events.CallbackQuery(pattern='^back$'))
     bot.add_event_handler(cancel_add_admin, events.CallbackQuery(pattern='^cancel$'))
 
