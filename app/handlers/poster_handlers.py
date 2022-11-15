@@ -1,6 +1,5 @@
 from telethon import TelegramClient, events
 from telethon.events import StopPropagation 
-import logging
 
 from app.globals import PosterConfig, Bot, bot
 from app.logger import errors_catching, errors_catching_async
@@ -8,7 +7,6 @@ from app.keyboard import *
 from app.fsm import *
 from app.utils import check_shedule
 from app.adv_poster import adv_send
-
 
 @errors_catching_async
 @allowed_states(CommonState.WAIT_ON_START)
@@ -90,7 +88,7 @@ async def change_poster_param(event: events.CallbackQuery, who: int):
         err_text = await adv_send(bot, poster)
         text = str(poster)
         text += "\nНажмите кнопку для изменения параметра\n"
-        text += ",".join(err_text)
+        text += "<b>"+",".join(err_text)+"</b>"
         await event.edit(text, buttons = get_poster_btns(poster))
         fsm.set_state(who, EditSenderState.WAIT_COMMAND)     
         raise StopPropagation #Останавливает дальнейшую обработку
@@ -124,7 +122,10 @@ async def update_param(event: events.NewMessage, who: int):
         res = check_shedule(schedule)
         if res:
             try: # выдает ошибку если пытаемся отправить то же текст
-                await main_event.edit(res, buttons = [btn_cancel])
+                buttons = get_poster_btns(poster)
+                buttons.append([btn_cancel])
+                buttons.remove([btn_back])               
+                await main_event.edit(res, buttons = buttons)
             except:
                 pass
             raise StopPropagation
@@ -150,11 +151,7 @@ async def cancel_update_param(event: events.CallbackQuery, who: int):
     fsm.set_state(who, EditSenderState.WAIT_COMMAND)    
     raise StopPropagation
 
-async def unknown_callback(event: events.CallbackQuery):
-    errtext = 'Unknown clicking {}!'.format(event.data)
-    print(errtext)
-    logging.warning("Exception", exc_info=errtext)
-
+   
 
 @errors_catching
 def register_handlers():
@@ -163,6 +160,3 @@ def register_handlers():
     bot.add_event_handler(back_to_start, events.CallbackQuery(pattern='^back$'))
     bot.add_event_handler(cancel_update_param, events.CallbackQuery(pattern='^cancel$'))
     bot.add_event_handler(update_param, events.NewMessage(chats=bot.config.admins, incoming=True))
-    bot.add_event_handler(unknown_callback, events.CallbackQuery)
-
-

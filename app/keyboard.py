@@ -21,7 +21,7 @@ def get_poster_btns(poster: PosterConfig):
                  Button.inline('⏰Расписание рассылки', 'poster_schedule')])
     btns.append([Button.inline(f'🛠{debug} отладку', 'poster_debug'),
                  Button.inline('✏Группа для отчетов', 'poster_recieverchange')])
-    btns.append([Button.inline('▶Запустить рассылку', 'poster_start')])             
+    btns.append([Button.inline('▶Запустить разово', 'poster_start')])             
     btns.append([btn_back])
     return btns
 

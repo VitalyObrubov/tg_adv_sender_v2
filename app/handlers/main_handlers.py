@@ -1,7 +1,7 @@
 from telethon import events
 from telethon.tl.custom import Button
 from telethon.events import StopPropagation
-
+import logging
 from app.globals import Bot, bot
 from app.fsm import *
 from app.logger import errors_catching, errors_catching_async
@@ -20,13 +20,15 @@ async def start(event: events.NewMessage):
     raise StopPropagation #Останавливает дальнейшую обработку
 
 
-async def unknown_callback(event: events.CallbackQuery):
-    await event.respond('Unknown clicking {}!'.format(event.data))
-    pass
-
 async def unknown_message(event: events.NewMessage):
-    await event.respond('Неизвестная команда. Используйте кнопки')
+    errtext = f'Неизвестная команда. {event.message.message}'
+    print(errtext)
+    logging.warning("Exception", exc_info=errtext)
 
+async def unknown_callback(event: events.CallbackQuery):
+    errtext = 'Unknown clicking {}!'.format(event.data)
+    print(errtext)
+    logging.warning("Exception", exc_info=errtext)
 
 @errors_catching
 def register_handlers():
