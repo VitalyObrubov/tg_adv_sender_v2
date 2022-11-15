@@ -1,4 +1,4 @@
-import os, yaml, datetime
+import os, yaml, asyncio
 from telethon import TelegramClient
 from telethon.tl.types import User as tgUser
 from app.scheduler import BotScheduler
@@ -24,14 +24,19 @@ class Bot(TelegramClient):
 
         super().__init__('config/session_name_bot',self.config.api_id,self.config.api_hash)
     
-    async def __str__(self) -> str:
+    async def userbot_is_autorised(self):
+        if await self.userbot.is_user_authorized():   
+            res = "\nБот авторизацию прошел"
+        else:
+            res = "\nБот авторизацию не прошел" 
+        return res       
+    
+    def __str__(self) -> str:
         res = f'Настройки бота:"\n'
         res += f"Отправка осуществляется от имени '{self.userbot_fio}'\n" 
-        if await self.userbot.is_user_authorized():   
-            res += "Бот авторизацию прошел\n"
-        else:
-            res += "Бот авторизацию не прошел\n"
         res += str(self.config)
+        res += f"\nBot username: @{bot.me.username}"
+        res += f"\nBot name: {bot.me.first_name}"         
         return res
     
     def add_poster(self):
@@ -76,12 +81,12 @@ class BotConfig:
         self.admins = [admin for admin in raw_config["bot"]["admins"]]
     
     def __str__(self) -> str:
-        res = f'Настройки бота:"\n'
+        # res = f'Настройки бота:"\n'
         # res += f'API_ID: "{self.api_id}"\n'
         # res += f'API_HASH: "{self.api_hash}"\n'
         # res += f'TOKEN: "{self.token}"\n'
         admins = '\n'.join(self.admins)
-        res += f'Администраторы бота:\n{admins}\n'    
+        res = f'Администраторы бота:\n{admins}\n'    
         return res
 
 class PosterConfig:

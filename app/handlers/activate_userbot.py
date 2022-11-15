@@ -12,8 +12,6 @@ import pytz
 @errors_catching_async
 async def activate_userbot(bot: Bot, event = None, who = 1):
     fsm_data = fsm.get_data(who)
-    bot.userbot = TelegramClient('config/session_name_adv', bot.config.api_id, bot.config.api_hash)
-    await bot.userbot.connect()
     if not await bot.userbot.is_user_authorized():
         text = 'Для авторизации введите свой телефонный номер пользователя в телеграм в формате +7ХХХХХХХХХХ' 
         admin = bot.config.admins[0]

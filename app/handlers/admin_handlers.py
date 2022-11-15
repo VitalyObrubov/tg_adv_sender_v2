@@ -12,10 +12,7 @@ from app.fsm import *
 @allowed_states(CommonState.WAIT_ON_START)
 async def manage_bot_click(event: events.CallbackQuery, who: int):
     sender_link = f'https://t.me/{event._sender.username}'
-    text = f"Отправка осуществляется от имени '{bot.userbot_fio}'\n"
-    text += str(bot.config)
-    text += f"\nBot username: @{bot.me.username}"
-    text += f"\nBot name: {bot.me.first_name}" 
+    text = str(bot)+await bot.userbot_is_autorised()
     text += "\nНажмите кнопку для изменения параметра"
     await event.edit(text, buttons = get_bot_adm_btns(sender_link), link_preview = False)
     fsm.set_state(who, EditBotState.WAIT_COMMAND)
@@ -37,7 +34,7 @@ async def del_admin(event: events.CallbackQuery, who: int):
     admin_id = int(event.data.decode( "utf-8" ).split("-")[-1])
     bot.config.admins.pop(admin_id)
     bot.save_bot_config()
-    text = str(bot.config.admins)
+    text = str(bot)+await bot.userbot_is_autorised()
     sender_link = f'https://t.me/{event._sender.username}'
     text += "\nНажмите кнопку для изменения параметра"
     await event.edit(text, buttons = get_bot_adm_btns(sender_link), link_preview = False)
@@ -48,7 +45,11 @@ async def del_admin(event: events.CallbackQuery, who: int):
 async def add_admin_click(event: events.CallbackQuery, who: int):
     fsm_data = fsm.get_data(who)     
     text = "Введите ссылку на пользователя телеграмм в формате https://t.me/username"
-    await event.edit(text, buttons = [btn_cancel], link_preview = False)
+    sender_link = f'https://t.me/{event._sender.username}'
+    buttons = get_bot_adm_btns(sender_link)
+    buttons.append([btn_cancel])
+    buttons.remove([btn_back])
+    await event.edit(text, buttons = buttons, link_preview = False)
     fsm_data['main_event'] = event
     fsm.set_state(who, EditBotState.WAIT_INPUT_PARAM)  
     fsm.set_data(who,fsm_data)
@@ -76,7 +77,11 @@ async def save_admin(event: events.NewMessage, who: int):
     except:
         text = "<b>Введенные данные не являются ссылкой телеграмм.</b> Повторите ввод"
         try: # выдает ошибку если пытаемся отправить то же текст
-            await main_event.edit(text, buttons = [btn_cancel])
+            sender_link = f'https://t.me/{event._sender.username}'
+            buttons = get_bot_adm_btns(sender_link)
+            buttons.append([btn_cancel])
+            buttons.remove([btn_back])
+            await event.edit(text, buttons = buttons, link_preview = False)
         except:
             pass
         raise StopPropagation
@@ -85,8 +90,7 @@ async def save_admin(event: events.NewMessage, who: int):
         bot.config.admins.append(link)
         bot.save_bot_config()
     sender_link = f'https://t.me/{event._sender.username}'
-    text = f"Отправка осуществляется от имени '{bot.userbot_fio}'\n"
-    text += str(bot.config)
+    text = str(bot)+await bot.userbot_is_autorised()
     text += "\nНажмите кнопку для изменения параметра"
     await main_event.edit(text, buttons = get_bot_adm_btns(sender_link), link_preview = False)
     fsm.set_state(who, EditBotState.WAIT_COMMAND)    
@@ -95,8 +99,7 @@ async def save_admin(event: events.NewMessage, who: int):
 @errors_catching_async
 @allowed_states(EditBotState.WAIT_INPUT_PARAM)
 async def cancel_add_admin(event: events.CallbackQuery, who: int):
-    text = f"Отправка осуществляется от имени '{bot.userbot_fio}'\n"
-    text += str(bot.config)
+    text = str(bot) + await bot.userbot_is_autorised()
     sender_link = f'https://t.me/{event._sender.username}'
     text += "\nНажмите кнопку для изменения параметра"
     await event.edit(text, buttons = get_bot_adm_btns(sender_link), link_preview = False)
