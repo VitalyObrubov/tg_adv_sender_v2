@@ -47,10 +47,10 @@ async def adv_send(bot: Bot, poster: PosterConfig):
     log += f"Поиск в группе '{poster.group_link}'\n"
     log += f"   поиск списка групп по '{poster.group_list_keyword}'\n"
     if list_post:
-        log += f"{poster.group_link}/{list_post.id}\n"
+        log += f"<a href='{poster.group_link}/{list_post.id}'>Ссылка на пост с адресами</a>\n"
     log += f"   поиск рекламы по '{poster.adv_post_keyword}'\n"
     if adv_post:
-        log += f"{poster.group_link}/{adv_post.id}\n"
+        log += f"<a href='{poster.group_link}/{adv_post.id}'>Ссылка на пост с рекламой</a>\n"
     if errors:
         log += f"Ошибки отправки:\n"
         log += "\n".join(errors)+"\n"

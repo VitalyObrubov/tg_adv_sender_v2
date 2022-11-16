@@ -29,12 +29,14 @@ async def start():
         bot.save_bot_config()    
     register_handlers()  
     bot.userbot = TelegramClient('config/session_name_adv', bot.config.api_id, bot.config.api_hash)
+    bot.userbot.parse_mode = 'HTML'
     await bot.userbot.connect()
     try: # на всякий случай
         full = await bot.userbot(GetFullUserRequest("me"))
         bot.userbot_fio = f"{full.users[0].first_name} {full.users[0].last_name} {full.users[0].username}"
     except:
-        pass   # Начать получать апдейты от Телеграма и запустить все хендлеры
+        pass   
+    # Начать получать апдейты от Телеграма и запустить все хендлеры
     print(f"Bot username: @{bot.me.username}")
     print(f"Bot name: {bot.me.first_name}")
     print('(Press Ctrl+C to stop this)')    

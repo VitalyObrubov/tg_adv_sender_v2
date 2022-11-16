@@ -1,4 +1,4 @@
-    
+
 def check_shedule(schedule: list) -> str:
     res = ''
     for time in schedule:       
@@ -14,3 +14,5 @@ def check_shedule(schedule: list) -> str:
     if res:
         res = 'Неверное время: ' + res
     return res
+
+

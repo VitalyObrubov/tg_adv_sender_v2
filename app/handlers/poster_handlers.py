@@ -6,7 +6,7 @@ from app.logger import errors_catching, errors_catching_async
 from app.keyboard import *
 from app.fsm import *
 from app.utils import check_shedule
-from app.adv_poster import adv_send
+from app.adv_poster import adv_send, find_mess
 
 @errors_catching_async
 @allowed_states(CommonState.WAIT_ON_START)
@@ -19,7 +19,7 @@ async def manage_poster_click(event: events.CallbackQuery, who: int):
     else:
         poster_id = int(poster_id)
     poster = bot.posters[poster_id]
-    text = str(poster)
+    text = await poster_string(poster)
     text += "\nНажмите кнопку для изменения параметра"
     await event.edit(text, buttons = get_poster_btns(poster))
     fsm.set_state(who, EditSenderState.WAIT_COMMAND)
@@ -66,7 +66,7 @@ async def change_poster_param(event: events.CallbackQuery, who: int):
     elif param == 'debug':
         poster.debug ^= 1
         bot.save_poster_config()
-        text = str(poster)
+        text = await poster_string(poster)
         text += "\nНажмите кнопку для изменения параметра"
         await event.edit(text, buttons = get_poster_btns(poster))
         raise StopPropagation #Останавливает дальнейшую обработку
@@ -77,6 +77,17 @@ async def change_poster_param(event: events.CallbackQuery, who: int):
         await event.edit('Вас приветствует бот управления рассылками',  buttons = get_posters_btns())
         bot.save_poster_config()
         raise StopPropagation #Останавливает дальнейшую обработку
+    elif param == 'copy':
+        bot.add_poster(poster)
+        new_poster_id = len(bot.posters) - 1        
+        new_poster = bot.posters[new_poster_id]
+        text = str(new_poster)
+        text += "\nНажмите кнопку для изменения параметра"
+        await event.edit(text, buttons = get_poster_btns(poster))
+        fsm.set_state(who, EditSenderState.WAIT_COMMAND)
+        fsm_data['poster_id'] = poster_id
+        fsm.set_data(who,fsm_data)
+        raise StopPropagation
     elif param == 'start':
         if not await bot.userbot.is_user_authorized():
             text = "Userbot для рассылки не активирован. Активируйте его из административного меню"
@@ -86,7 +97,7 @@ async def change_poster_param(event: events.CallbackQuery, who: int):
         fsm.set_state(who, EditSenderState.WAIT_SEND_FINISH)
         await event.edit(text, buttons = get_poster_btns(poster)) 
         err_text = await adv_send(bot, poster)
-        text = str(poster)
+        text = await poster_string(poster)
         text += "\nНажмите кнопку для изменения параметра\n"
         text += "<b>"+",".join(err_text)+"</b>"
         await event.edit(text, buttons = get_poster_btns(poster))
@@ -133,7 +144,7 @@ async def update_param(event: events.NewMessage, who: int):
         else:
             bot.scheduler.update_poster_jobs(poster, schedule)
     bot.save_poster_config()
-    text = str(poster)
+    text = await poster_string(poster)
     text += "\nНажмите кнопку для изменения параметра"
     await main_event.edit(text, buttons = get_poster_btns(poster))
     fsm.set_state(who, EditSenderState.WAIT_COMMAND)    
@@ -145,7 +156,7 @@ async def update_param(event: events.NewMessage, who: int):
 async def cancel_update_param(event: events.CallbackQuery, who: int):
     fsm_data = fsm.get_data(who)   
     poster = bot.posters[fsm_data['poster_id']]
-    text = str(poster)
+    text = await poster_string(poster)
     text += "\nНажмите кнопку для изменения параметра"
     await event.edit(text, buttons = get_poster_btns(poster))
     fsm.set_state(who, EditSenderState.WAIT_COMMAND)    
@@ -160,3 +171,28 @@ def register_handlers():
     bot.add_event_handler(back_to_start, events.CallbackQuery(pattern='^back$'))
     bot.add_event_handler(cancel_update_param, events.CallbackQuery(pattern='^cancel$'))
     bot.add_event_handler(update_param, events.NewMessage(chats=bot.config.admins, incoming=True))
+
+
+async def poster_string(poster: PosterConfig):
+    res = f'Рассылка: "{poster.name}"\n'
+    res += f'Поиск списка по: "{poster.group_list_keyword}"\n'
+    res += await check_post(poster.group_list_keyword, poster.group_link, bot)
+    res += f'Поиск рекламы по: "{poster.adv_post_keyword}"\n'
+    res += await check_post(poster.adv_post_keyword, poster.group_link, bot)
+    res += f'Ссылка на группу с рекламой: "{poster.group_link}"\n'        
+    #res += f"<a href='{self.group_link}'>Группа с рекламой</a>\n"
+    schedule = ', '.join(poster.schedule)
+    res += f'Время рассылки: "{schedule}"\n'
+    res += f'Получатель отчетов: "{poster.report_reciever}"\n'
+    debug = 'вкл.' if poster.debug else 'выкл.'
+    res += f'Отладка: "{debug}"\n'
+    return res
+
+
+async def check_post(search_keyword: str, group_link: str, bot) -> str:
+    mess = await find_mess(search_keyword, group_link, bot)
+    if mess:
+        res = f"<a href='{group_link}/{mess.id}'>Ссылка на пост</a>\n"
+    else:
+        res = "Пост не найден"
+    return res

@@ -1,14 +1,15 @@
 import os, yaml, asyncio
 from telethon import TelegramClient
 from telethon.tl.types import User as tgUser
-from app.scheduler import BotScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 class Bot(TelegramClient):
     config: "BotConfig"
     posters: list["PosterConfig"]
     userbot: TelegramClient
     userbot_fio: str
     me: tgUser
-    scheduler: BotScheduler
+    scheduler: 'BotScheduler'
     def __init__(self, *args, **kwargs):        
         self.me = None
         self.userbot = None
@@ -39,8 +40,8 @@ class Bot(TelegramClient):
         res += f"\nBot name: {bot.me.first_name}"         
         return res
     
-    def add_poster(self):
-        self.posters.append(PosterConfig())
+    def add_poster(self, old_poster: "PosterConfig" = None):
+        self.posters.append(PosterConfig(old_poster))
         self.save_poster_config()
 
     def save_poster_config(self):
@@ -91,7 +92,7 @@ class BotConfig:
 
 class PosterConfig:
     def __init__(self, poster = None) -> None:
-        if poster:
+        if type(poster) == dict:
             self.name = poster.get("name")
             self.group_list_keyword = poster.get("group_list_keyword")
             self.adv_post_keyword = poster.get("adv_post_keyword")
@@ -100,6 +101,15 @@ class PosterConfig:
             self.group_link = poster.get("group_link")
             self.schedule = {time:None for time in poster["schedule"]}
             self.report_reciever = poster.get("report_reciever")
+        elif type(poster) == PosterConfig:
+            self.name = "!!!__Новая рассылка__!!!"
+            self.group_list_keyword = poster.group_list_keyword
+            self.adv_post_keyword = poster.adv_post_keyword
+            self.debug = poster.debug
+            self.sending_on = poster.sending_on
+            self.group_link = poster.group_link
+            self.schedule = poster.schedule.copy()
+            self.report_reciever = poster.report_reciever
         else:
             self.name = "Рассылка ХХХ"
             self.group_list_keyword = "Ввести фразу поиска"
@@ -114,7 +124,8 @@ class PosterConfig:
         res = f'Рассылка: "{self.name}"\n'
         res += f'Поиск списка по: "{self.group_list_keyword}"\n'
         res += f'Поиск рекламы по: "{self.adv_post_keyword}"\n'
-        res += f'Ссылка на группу с рекламой: "{self.group_link}"\n'
+        res += f'Ссылка на группу с рекламой: "{self.group_link}"\n'        
+        #res += f"<a href='{self.group_link}'>Группа с рекламой</a>\n"
         schedule = ', '.join(self.schedule)
         res += f'Время рассылки: "{schedule}"\n'
         res += f'Получатель отчетов: "{self.report_reciever}"\n'
@@ -122,8 +133,33 @@ class PosterConfig:
         res += f'Отладка: "{debug}"\n'
         return res
 
+
+
 bot = Bot()
 bot.parse_mode = 'HTML'
 
 
+class BotScheduler(AsyncIOScheduler):
+   
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+    async def update_jobs(self, bot):
+        pass
+    #     self.delete_jobs()
+    #     for poster in bot.posters:
+    #         for time in poster.schedule:
+    #             start_time = datetime.datetime.strptime(time, "%H:%M")
+    #             job = self.daily(start_time, adv_send, args=(poster,))
+    #             poster.schedule[time] = job
+
+    async def update_poster_jobs(self, poster, schedule: list):
+        pass
+    #     for job in poster.schedule.values():
+    #         self.delete_job(job)
+    #     poster.schedule = {}
+    #     for time in schedule:
+    #         start_time = datetime.datetime.strptime(time, "%H:%M")
+    #         job = self.daily(start_time, adv_send, args=(poster,))
+    #         poster.schedule[time] = job
 

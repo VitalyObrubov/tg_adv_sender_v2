@@ -15,6 +15,7 @@ def get_poster_btns(poster: PosterConfig):
     btns = []
     btns.append([Button.inline('🖅Название рассылки', 'poster_name'),
                  Button.inline('❌Удалить рассылку', 'poster_del')])
+    btns.append([Button.inline('🗎Скопировать рассылку', 'poster_copy')])
     btns.append([Button.inline('🔍Фраза поиска списка', 'poster_list'),
                  Button.inline('🔎Фраза поиска рекламы', 'poster_adv')])
     btns.append([Button.inline('🔗Группа с рекламой', 'poster_link'),

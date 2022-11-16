@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "One time sender",
+            "type": "python",
+            "request": "launch",
+            "module": "sender",
+            "args": ["1",],
+            "justMyCode": true
+        },
+        {
             "name": "Python: Module",
             "type": "python",
             "request": "launch",

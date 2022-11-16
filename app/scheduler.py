@@ -1,14 +1,16 @@
-from scheduler.asyncio import Scheduler
-import pytz, datetime, typing
+import os
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import pytz, datetime, typing, asyncio
+
+
 # from app.adv_poster import adv_send 
-# from app.globals import Bot, PosterConfig  
+from app.globals import Bot, PosterConfig  
 
 
-class BotScheduler(Scheduler):
-
+class BotScheduler(AsyncIOScheduler):
    
     def __init__(self, *args, **kwargs):
-        pass
+        super().__init__()
 
     async def update_jobs(self, bot):
         pass
