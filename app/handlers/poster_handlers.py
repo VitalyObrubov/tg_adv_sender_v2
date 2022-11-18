@@ -21,7 +21,7 @@ async def manage_poster_click(event: events.CallbackQuery, who: int):
     poster = bot.posters[poster_id]
     text = await poster_string(poster)
     text += "\nНажмите кнопку для изменения параметра"
-    await event.edit(text, buttons = get_poster_btns(poster))
+    await event.edit(text, buttons = get_poster_btns(poster), link_preview = False)
     fsm.set_state(who, EditSenderState.WAIT_COMMAND)
     fsm_data['poster_id'] = poster_id
     fsm.set_data(who,fsm_data)
@@ -31,7 +31,8 @@ async def manage_poster_click(event: events.CallbackQuery, who: int):
 @allowed_states(EditSenderState.WAIT_COMMAND)
 async def back_to_start(event: events.CallbackQuery, who: int):
     fsm.set_state(who, CommonState.WAIT_ON_START)
-    await event.edit('Вас приветствует бот управления рассылками', buttons = get_posters_btns())
+    text = 'Вас приветствует бот управления рассылками'
+    await event.edit(text, buttons = get_posters_btns(), link_preview = False)
     raise StopPropagation #Останавливает дальнейшую обработку
 
 @errors_catching_async
@@ -47,30 +48,51 @@ async def change_poster_param(event: events.CallbackQuery, who: int):
     buttons.remove([btn_back])
     if param == 'name':
         text = "Введите название расссылки"
-        await event.edit(text, buttons = buttons)       
+        await event.edit(text, buttons = buttons, link_preview = False)       
     elif param == 'list':
         text = "Введите фразу поиска списка получателей"
-        await event.edit(text, buttons = buttons)        
+        await event.edit(text, buttons = buttons, link_preview = False)        
     elif param == 'adv':
         text = "Введите фразу поиска поста с рекламой"
-        await event.edit(text, buttons = buttons)        
+        await event.edit(text, buttons = buttons, link_preview = False)        
     elif param == 'link':
         text = "Введите ссылку канал или группу телеграмм в формате https://t.me/namedlink"
-        await event.edit(text, buttons = buttons) 
+        await event.edit(text, buttons = buttons, link_preview = False) 
     elif param == 'recieverchange':
         text = "Введите ссылку на пользователя, канал или группу телеграмм в формате https://t.me/namedlink"
-        await event.edit(text, buttons = buttons) 
+        await event.edit(text, buttons = buttons, link_preview = False) 
     elif param == 'schedule':
-        text = "Введите расписание рассылки в формате: 10:20,12:30,16:40"
-        await event.edit(text, buttons = buttons)         
+        text = "Введите расписание рассылки в формате crontab"
+        await event.edit(text, buttons = buttons, link_preview = False)         
     elif param == 'debug':
         poster.debug ^= 1
         bot.save_poster_config()
         text = await poster_string(poster)
         text += "\nНажмите кнопку для изменения параметра"
-        await event.edit(text, buttons = get_poster_btns(poster))
+        await event.edit(text, buttons = get_poster_btns(poster), link_preview = False)
         raise StopPropagation #Останавливает дальнейшую обработку
         return
+    elif param == 'startschedule':
+        if poster.cronjob:
+            poster.sending_on ^= 1
+            bot.save_poster_config()
+            if poster.sending_on:
+                poster.cronjob.resume()
+                txt = "\n<b>Задача запущена </b>"
+            else:
+                poster.cronjob.pause()
+                txt = "\n<b>Задача запущена </b>"
+            text = await poster_string(poster)
+            text += "\nНажмите кнопку для изменения параметра"
+            text += txt
+            await event.edit(text, buttons = get_poster_btns(poster), link_preview = False)
+        else:
+            text = await poster_string(poster)
+            text += "\n<b>Нет существующих задач для запуска </b>"
+            text += "\nНажмите кнопку для изменения параметра"
+            await event.edit(text, buttons = get_poster_btns(poster), link_preview = False)
+
+        raise StopPropagation #Останавливает дальнейшую обработку
     elif param == 'del': 
         bot.posters.remove(poster)      
         fsm.set_state(who, CommonState.WAIT_ON_START)
@@ -83,7 +105,7 @@ async def change_poster_param(event: events.CallbackQuery, who: int):
         new_poster = bot.posters[new_poster_id]
         text = str(new_poster)
         text += "\nНажмите кнопку для изменения параметра"
-        await event.edit(text, buttons = get_poster_btns(poster))
+        await event.edit(text, buttons = get_poster_btns(poster), link_preview = False)
         fsm.set_state(who, EditSenderState.WAIT_COMMAND)
         fsm_data['poster_id'] = poster_id
         fsm.set_data(who,fsm_data)
@@ -95,12 +117,12 @@ async def change_poster_param(event: events.CallbackQuery, who: int):
             raise StopPropagation #Останавливает дальнейшую обработку    
         text = 'Идет рассыылка. Ожидайте'    
         fsm.set_state(who, EditSenderState.WAIT_SEND_FINISH)
-        await event.edit(text, buttons = get_poster_btns(poster)) 
+        await event.edit(text, buttons = get_poster_btns(poster), link_preview = False) 
         err_text = await adv_send(bot, poster)
         text = await poster_string(poster)
         text += "\nНажмите кнопку для изменения параметра\n"
         text += "<b>"+",".join(err_text)+"</b>"
-        await event.edit(text, buttons = get_poster_btns(poster))
+        await event.edit(text, buttons = get_poster_btns(poster), link_preview = False)
         fsm.set_state(who, EditSenderState.WAIT_COMMAND)     
         raise StopPropagation #Останавливает дальнейшую обработку
     fsm.set_state(who, EditSenderState.WAIT_INPUT_PARAM)
@@ -129,24 +151,22 @@ async def update_param(event: events.NewMessage, who: int):
     elif param == 'recieverchange':              
         poster.report_reciever = value
     elif param == 'schedule':
-        schedule = value.split(',')
+        schedule = value
         res = check_shedule(schedule)
         if res:
             try: # выдает ошибку если пытаемся отправить то же текст
-                buttons = get_poster_btns(poster)
-                buttons.append([btn_cancel])
-                buttons.remove([btn_back])               
-                await main_event.edit(res, buttons = buttons)
+                await main_event.edit(res, buttons = [btn_cancel])
             except:
                 pass
             raise StopPropagation
-            return
         else:
-            bot.scheduler.update_poster_jobs(poster, schedule)
+            poster.schedule = schedule
+            bot.scheduler.update_poster_job(adv_send, poster, bot)
+
     bot.save_poster_config()
     text = await poster_string(poster)
     text += "\nНажмите кнопку для изменения параметра"
-    await main_event.edit(text, buttons = get_poster_btns(poster))
+    await main_event.edit(text, buttons = get_poster_btns(poster), link_preview = False)
     fsm.set_state(who, EditSenderState.WAIT_COMMAND)    
     raise StopPropagation
 
@@ -158,7 +178,7 @@ async def cancel_update_param(event: events.CallbackQuery, who: int):
     poster = bot.posters[fsm_data['poster_id']]
     text = await poster_string(poster)
     text += "\nНажмите кнопку для изменения параметра"
-    await event.edit(text, buttons = get_poster_btns(poster))
+    await event.edit(text, buttons = get_poster_btns(poster), link_preview = False)
     fsm.set_state(who, EditSenderState.WAIT_COMMAND)    
     raise StopPropagation
 
@@ -180,19 +200,19 @@ async def poster_string(poster: PosterConfig):
     res += f'Поиск рекламы по: "{poster.adv_post_keyword}"\n'
     res += await check_post(poster.adv_post_keyword, poster.group_link, bot)
     res += f'Ссылка на группу с рекламой: "{poster.group_link}"\n'        
-    #res += f"<a href='{self.group_link}'>Группа с рекламой</a>\n"
-    schedule = ', '.join(poster.schedule)
-    res += f'Время рассылки: "{schedule}"\n'
+    res += f'Время рассылки: "{poster.schedule}"\n'
     res += f'Получатель отчетов: "{poster.report_reciever}"\n'
     debug = 'вкл.' if poster.debug else 'выкл.'
     res += f'Отладка: "{debug}"\n'
+    sending = 'вкл.' if poster.sending_on else 'выкл.'
+    res += f'Рассылка по расписанию: "{sending}"\n'
     return res
 
-
+@errors_catching_async
 async def check_post(search_keyword: str, group_link: str, bot) -> str:
     mess = await find_mess(search_keyword, group_link, bot)
     if mess:
         res = f"<a href='{group_link}/{mess.id}'>Ссылка на пост</a>\n"
     else:
-        res = "Пост не найден"
+        res = "Пост не найден\n"
     return res

@@ -1,8 +1,10 @@
-import os, yaml, asyncio
+import os, yaml
 from telethon import TelegramClient
 from telethon.tl.types import User as tgUser
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import pytz
 
+MoscowZone=pytz.timezone('Europe/Moscow')
 class Bot(TelegramClient):
     config: "BotConfig"
     posters: list["PosterConfig"]
@@ -46,7 +48,13 @@ class Bot(TelegramClient):
 
     def save_poster_config(self):
         # Меняем значения конфиг. файла.
-        posters = [{f"poster{index}":vars(poster)} for index,poster in enumerate(self.posters)]
+        posters_copy =[]
+        for poster in self.posters:
+            poster_copy = PosterConfig(poster, new = False)
+            poster_copy.cronjob = None
+            posters_copy.append(poster_copy)
+
+        posters = [{f"poster{index}":vars(poster)} for index,poster in enumerate(posters_copy)]
         with open(r'config/posters_config.yaml', 'w', encoding="utf-8") as file: 
             yaml.dump(posters, file, indent=4, default_flow_style=False, allow_unicode=True)
     
@@ -91,46 +99,49 @@ class BotConfig:
         return res
 
 class PosterConfig:
-    def __init__(self, poster = None) -> None:
-        if type(poster) == dict:
+    def __init__(self, poster = None, new = True) -> None:
+        if type(poster) == dict: # Загрузка из конфига
             self.name = poster.get("name")
             self.group_list_keyword = poster.get("group_list_keyword")
             self.adv_post_keyword = poster.get("adv_post_keyword")
             self.debug = poster.get("debug")
-            self.sending_on = poster.get("sending_on")
+            self.sending_on = 1 if poster.get("sending_on") else 0
             self.group_link = poster.get("group_link")
-            self.schedule = {time:None for time in poster["schedule"]}
+            self.schedule = poster["schedule"]
             self.report_reciever = poster.get("report_reciever")
-        elif type(poster) == PosterConfig:
-            self.name = "!!!__Новая рассылка__!!!"
+            self.cronjob = None
+        elif type(poster) == PosterConfig: # Копирование существующего
+            self.name = "<b>!!!__Новая рассылка__!!!</b>" if new else  poster.name
             self.group_list_keyword = poster.group_list_keyword
             self.adv_post_keyword = poster.adv_post_keyword
             self.debug = poster.debug
             self.sending_on = poster.sending_on
             self.group_link = poster.group_link
-            self.schedule = poster.schedule.copy()
+            self.schedule = poster.schedule
             self.report_reciever = poster.report_reciever
-        else:
-            self.name = "Рассылка ХХХ"
+            self.cronjob = None
+        else: # Создание нового
+            self.name = "<b>!!!__Новая рассылка__!!!</b>"
             self.group_list_keyword = "Ввести фразу поиска"
             self.adv_post_keyword = "Ввести фразу поиска"
             self.debug = 0
             self.sending_on = 0
             self.group_link = "Ссылка на группу"
-            self.schedule = {} 
-            self.report_reciever = "Ссылка на группу"           
+            self.schedule = "0,20,40 * * * *"
+            self.report_reciever = "Ссылка на группу"
+            self.cronjob = None           
     
     def __str__(self) -> str:
         res = f'Рассылка: "{self.name}"\n'
         res += f'Поиск списка по: "{self.group_list_keyword}"\n'
         res += f'Поиск рекламы по: "{self.adv_post_keyword}"\n'
         res += f'Ссылка на группу с рекламой: "{self.group_link}"\n'        
-        #res += f"<a href='{self.group_link}'>Группа с рекламой</a>\n"
-        schedule = ', '.join(self.schedule)
-        res += f'Время рассылки: "{schedule}"\n'
+        res += f'Время рассылки: "{self.schedule}"\n'
         res += f'Получатель отчетов: "{self.report_reciever}"\n'
         debug = 'вкл.' if self.debug else 'выкл.'
         res += f'Отладка: "{debug}"\n'
+        sending = 'вкл.' if self.sending_on else 'выкл.'
+        res += f'Рассылка по расписанию: "{sending}"\n'
         return res
 
 
@@ -144,22 +155,40 @@ class BotScheduler(AsyncIOScheduler):
     def __init__(self, *args, **kwargs):
         super().__init__()
 
-    async def update_jobs(self, bot):
-        pass
-    #     self.delete_jobs()
-    #     for poster in bot.posters:
-    #         for time in poster.schedule:
-    #             start_time = datetime.datetime.strptime(time, "%H:%M")
-    #             job = self.daily(start_time, adv_send, args=(poster,))
-    #             poster.schedule[time] = job
+    def update_jobs(self, func, bot: Bot):
+        self.remove_all_jobs()
+        for poster in bot.posters:
+            shed = self.parse_string(poster.schedule)
+            if shed:                      
+                job = self.add_job(func,'cron', minute = shed["minute"], hour = shed["hour"], 
+                                day = shed["day"], month = shed["month"], 
+                                day_of_week  = shed["day_of_week"], args=(bot, poster,),misfire_grace_time=600)
+                if not poster.sending_on:
+                    job.pause()
+                poster.cronjob = job
+            else:
+                poster.sending_on = 0
 
-    async def update_poster_jobs(self, poster, schedule: list):
-        pass
-    #     for job in poster.schedule.values():
-    #         self.delete_job(job)
-    #     poster.schedule = {}
-    #     for time in schedule:
-    #         start_time = datetime.datetime.strptime(time, "%H:%M")
-    #         job = self.daily(start_time, adv_send, args=(poster,))
-    #         poster.schedule[time] = job
-
+    def update_poster_job(self, func, poster: PosterConfig, bot: Bot):
+        if poster.cronjob:
+            poster.cronjob.remove()
+            shed = self.parse_string(poster.schedule)
+            job = self.add_job(func,'cron', minute = shed["minute"], hour = shed["hour"], 
+                            day = shed["day"], month = shed["month"], 
+                            day_of_week  = shed["day_of_week"], args=(bot, poster),
+                            misfire_grace_time=600, name = poster.name)
+            if not poster.sending_on:
+                job.pause()
+            poster.cronjob = job
+           
+    
+    def parse_string(self, crontab_string: str):
+        filds = ["minute","hour","day","month","day_of_week"]
+        if crontab_string:
+            crontab_lst = crontab_string.split()
+        else:
+            return False
+        if len(crontab_lst) !=5:
+            return False
+        else:
+            return dict(zip(filds,crontab_lst))

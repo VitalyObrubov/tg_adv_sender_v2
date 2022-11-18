@@ -1,6 +1,7 @@
 
 def check_shedule(schedule: list) -> str:
     res = ''
+    return res
     for time in schedule:       
         try:
             hours, mins = time.split(':')
@@ -14,5 +15,3 @@ def check_shedule(schedule: list) -> str:
     if res:
         res = 'Неверное время: ' + res
     return res
-
-

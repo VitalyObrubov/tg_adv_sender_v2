@@ -5,13 +5,15 @@ from app.globals import Bot, bot, PosterConfig
 def get_posters_btns():
     btns = []
     for id, poster in enumerate(bot.posters):
-        btns.append([Button.inline('🖅' + poster.name, f'poster-{id}')])
+        sending = 'вкл.' if poster.sending_on else 'выкл.'
+        btns.append([Button.inline(f'🖅{poster.name}-{sending}', f'poster-{id}')])
     btns.append([Button.inline('🆕Добавить рассылку', 'poster-add')])
     btns.append([Button.inline('🛠Настройки бота', 'manage_bot')])
     return btns
 
 def get_poster_btns(poster: PosterConfig):
     debug = 'Выкл.' if poster.debug else 'Вкл.'
+    sending = 'Остановить.' if poster.sending_on else 'Запустить.'
     btns = []
     btns.append([Button.inline('🖅Название рассылки', 'poster_name'),
                  Button.inline('❌Удалить рассылку', 'poster_del')])
@@ -22,7 +24,8 @@ def get_poster_btns(poster: PosterConfig):
                  Button.inline('⏰Расписание рассылки', 'poster_schedule')])
     btns.append([Button.inline(f'🛠{debug} отладку', 'poster_debug'),
                  Button.inline('✏Группа для отчетов', 'poster_recieverchange')])
-    btns.append([Button.inline('▶Запустить разово', 'poster_start')])             
+    btns.append([Button.inline('▶Запустить разово', 'poster_start'),
+                 Button.inline(f'▶{sending} по расписанию', 'poster_startschedule')])             
     btns.append([btn_back])
     return btns
 

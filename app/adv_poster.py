@@ -1,11 +1,16 @@
 from telethon.tl.types import Message
-import datetime, typing
+import datetime, logging
 from app.logger import errors_catching, errors_catching_async
 from app.globals import Bot, BotConfig, PosterConfig
 
 @errors_catching_async
 async def find_mess(search_keyword: str, group_link: str, bot: Bot):
-    message = await bot.userbot.get_messages(group_link, 30, search=search_keyword)
+    try:
+        message = await bot.userbot.get_messages(group_link, 30, search=search_keyword)
+    except Exception as e:
+        text = f"Error {e} in adv_poster.py proc find_mess"
+        logging.error("Exception", exc_info=e)
+        return False
     if message.total == 0:
         return False
     for mess in message:
@@ -37,7 +42,7 @@ async def adv_send(bot: Bot, poster: PosterConfig):
         pass
 
     if not errors:
-        errors = await send_to_groups( list_post, adv_post, bot)
+        errors,good_sends = await send_to_groups( list_post, adv_post, bot)
     
     end_time = datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")
 
@@ -51,25 +56,31 @@ async def adv_send(bot: Bot, poster: PosterConfig):
     log += f"   поиск рекламы по '{poster.adv_post_keyword}'\n"
     if adv_post:
         log += f"<a href='{poster.group_link}/{adv_post.id}'>Ссылка на пост с рекламой</a>\n"
+    
     if errors:
         log += f"Ошибки отправки:\n"
         log += "\n".join(errors)+"\n"
+    if good_sends:
+        log += f"Удачные отправки:\n"
+        log += "\n".join(good_sends)+"\n"
     log += f"Отправка завершена в {end_time}\n"    
     if errors or (int(poster.debug) == 1):
-        await bot.userbot.send_message(entity = poster.report_reciever, message = log)
+        await bot.userbot.send_message(entity = poster.report_reciever, message = log, link_preview = False)
     return errors
     
 @errors_catching_async
 async def send_to_groups(list_post: Message, adv_post: Message, bot: Bot) -> list:
     errors = []
+    good_sends = []
     grups_urls = list_post.message.split("\n")[1:]
     str_num=1
     for url in grups_urls:
         str_num+=1
         try:
             await bot.userbot.send_message(entity=url, message=adv_post.message)
+            good_sends.append(f"{url} - ok")
         except Exception as e:
             errors.append(f"адрес '{url}' в строке '{str_num}' -- {e}")
 
-    return errors
+    return errors, good_sends
 
