@@ -1,0 +1,40 @@
+-   poster0:
+        adv_post_keyword: телефоны поко
+        cronjob: null
+        debug: 1
+        group_link: https://t.me/lkkhgjhg
+        group_list_keyword: во все группы
+        name: Поко во все группы
+        report_reciever: https://t.me/+2AQOdU2KaDgwZjQy
+        schedule: '* * * * *'
+        sending_on: 0
+-   poster1:
+        adv_post_keyword: телефоны айфон
+        cronjob: null
+        debug: 0
+        group_link: https://t.me/+tS5EYdsSDSg0NTZi
+        group_list_keyword: в группу 2
+        name: айфон в группу 2
+        report_reciever: https://t.me/+2AQOdU2KaDgwZjQy
+        schedule: null
+        sending_on: 0
+-   poster2:
+        adv_post_keyword: телефоны айфон
+        cronjob: null
+        debug: 1
+        group_link: https://t.me/+tS5EYdsSDSg0NTZi
+        group_list_keyword: в группу 1
+        name: фйфон в группу 1
+        report_reciever: https://t.me/+2AQOdU2KaDgwZjQy
+        schedule: 20,40 * * * *
+        sending_on: 0
+-   poster3:
+        adv_post_keyword: телефоны поко
+        cronjob: null
+        debug: 1
+        group_link: https://t.me/lkkhgjhg
+        group_list_keyword: во все группы
+        name: <b>!!!__Новая рассылка__!!!</b>
+        report_reciever: https://t.me/+2AQOdU2KaDgwZjQy
+        schedule: null
+        sending_on: 0

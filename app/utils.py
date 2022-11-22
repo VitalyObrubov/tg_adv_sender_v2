@@ -1,5 +1,5 @@
 
-def check_shedule(schedule: list) -> str:
+def check_shedule(schedule: str) -> str:
     res = ''
     return res
     for time in schedule:       

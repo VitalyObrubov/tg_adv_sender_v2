@@ -131,6 +131,6 @@ dmypy.json
 #User  definde
 session_name_adv.session
 session_name_bot.session
-logs/
-config/
+config/bot_config.yaml
+config/posters_config.yaml
 tst.py
