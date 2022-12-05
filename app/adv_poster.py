@@ -41,6 +41,7 @@ async def adv_send(bot: Bot, poster: PosterConfig):
     except Exception as e:
         pass
 
+    good_sends = []    
     if not errors:
         errors,good_sends = await send_to_groups( list_post, adv_post, bot)
     
