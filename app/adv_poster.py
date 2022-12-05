@@ -9,7 +9,7 @@ async def find_mess(search_keyword: str, group_link: str, bot: Bot):
         message = await bot.userbot.get_messages(group_link, 30, search=search_keyword)
     except Exception as e:
         text = f"Error {e} in adv_poster.py proc find_mess"
-        logging.error("Exception", exc_info=e)
+        logging.error("Exception", exc_info=text)
         return False
     if message.total == 0:
         return False
