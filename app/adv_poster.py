@@ -6,7 +6,7 @@ from app.globals import Bot, BotConfig, PosterConfig
 @errors_catching_async
 async def find_mess(search_keyword: str, group_link: str, bot: Bot):
     try:
-        message = await bot.userbot.get_messages(group_link, 30, search=search_keyword)
+        message = await bot.userbot.get_messages(group_link, 30, search=search_keyword, reverse = True)
     except Exception as e:
         text = f"Error {e} in adv_poster.py proc find_mess"
         logging.error("Exception", exc_info=text)

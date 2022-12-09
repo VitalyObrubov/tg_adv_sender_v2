@@ -81,7 +81,7 @@ async def change_poster_param(event: events.CallbackQuery, who: int):
                 txt = "\n<b>Задача запущена </b>"
             else:
                 poster.cronjob.pause()
-                txt = "\n<b>Задача запущена </b>"
+                txt = "\n<b>Задача остановлена </b>"
             text = await poster_string(poster)
             text += "\nНажмите кнопку для изменения параметра"
             text += txt
@@ -154,8 +154,11 @@ async def update_param(event: events.NewMessage, who: int):
         schedule = value
         res = check_shedule(schedule)
         if res:
+            buttons = get_poster_btns(poster)
+            buttons.append([btn_cancel])
+            buttons.remove([btn_back])
             try: # выдает ошибку если пытаемся отправить то же текст
-                await main_event.edit(res, buttons = [btn_cancel])
+                await main_event.edit(res, buttons = buttons)
             except:
                 pass
             raise StopPropagation

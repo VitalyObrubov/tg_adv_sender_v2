@@ -1,17 +1,11 @@
 
-def check_shedule(schedule: str) -> str:
+def check_shedule(crontab_string: str) -> str:
     res = ''
-    return res
-    for time in schedule:       
-        try:
-            hours, mins = time.split(':')
-            hours = int(hours)
-            mins = int(mins)
-            if hours < 0 or hours > 23 or mins < 0 or mins > 59:
-                res += f'{time}, '
-        except:
-            res += f'{time}, '
-    
-    if res:
-        res = 'Неверное время: ' + res
+    if crontab_string:
+        crontab_lst = crontab_string.split()
+    else:
+        res = '<b>Неверная строка расписания</b>'
+    if len(crontab_lst) !=5:
+        res = '<b>В строке расписания должно быть 5 параметров</b>'
+
     return res

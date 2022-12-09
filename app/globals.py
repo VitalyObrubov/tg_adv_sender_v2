@@ -171,15 +171,19 @@ class BotScheduler(AsyncIOScheduler):
 
     def update_poster_job(self, func, poster: PosterConfig, bot: Bot):
         if poster.cronjob:
-            poster.cronjob.remove()
-            shed = self.parse_string(poster.schedule)
-            job = self.add_job(func,'cron', minute = shed["minute"], hour = shed["hour"], 
-                            day = shed["day"], month = shed["month"], 
-                            day_of_week  = shed["day_of_week"], args=(bot, poster),
-                            misfire_grace_time=600, name = poster.name)
-            if not poster.sending_on:
-                job.pause()
-            poster.cronjob = job
+            try:
+                poster.cronjob.remove()
+                poster.cronjob = None
+            except:
+                pass
+        shed = self.parse_string(poster.schedule)
+        job = self.add_job(func,'cron', minute = shed["minute"], hour = shed["hour"], 
+                        day = shed["day"], month = shed["month"], 
+                        day_of_week  = shed["day_of_week"], args=(bot, poster),
+                        misfire_grace_time=600, name = poster.name)
+        if not poster.sending_on:
+            job.pause()
+        poster.cronjob = job
            
     
     def parse_string(self, crontab_string: str):
